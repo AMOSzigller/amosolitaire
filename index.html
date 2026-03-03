@@ -2,63 +2,333 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amosolitaire - Loading</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Amosolitaire</title>
+    <link rel="icon" type="image/png" href="char_me.png">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Russo+One&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
             padding: 0;
-            /* ירוק קלאסי של שולחן קלפים */
-            background: radial-gradient(circle, #007700 0%, #004400 100%);
-            color: white;
-            font-family: 'Courier New', Courier, monospace;
+            background-color: #007700;
+            background-image: radial-gradient(circle, #008800 0%, #004400 100%);
+            font-family: 'Share Tech Mono', monospace;
+            overflow: hidden;
+            user-select: none;
+            touch-action: none; /* חוסם גלילת מסך מעצבנת במובייל */
+        }
+
+        /* --- הלוח המזויף --- */
+        #game-board {
+            width: 100vw;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header-text {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            100% { opacity: 1; text-shadow: 0 0 10px #fff; }
+        }
+
+        .solitaire-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .pile {
+            width: 13%;
+            aspect-ratio: 2.5 / 3.5;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .card-back {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #0011ff 25%, #0000aa 25%, #0000aa 50%, #0011ff 50%, #0011ff 75%, #0000aa 75%, #0000aa 100%);
+            background-size: 20px 20px;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+
+        .stack-2 { top: 4px; }
+        .stack-3 { top: 8px; }
+        .stack-4 { top: 12px; }
+        .stack-5 { top: 16px; }
+
+        /* --- הקנבס של האנימציה --- */
+        #win-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 20;
+            pointer-events: none; 
+            display: none;
+        }
+
+        /* --- מסך הניצחון --- */
+        #win-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
             text-align: center;
-            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s;
+            z-index: 50;
+            padding: 20px;
+            box-sizing: border-box;
+            backdrop-filter: blur(3px);
         }
-        h1 {
-            font-size: 3rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
-            letter-spacing: 2px;
+
+        #win-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
         }
-        p {
-            font-size: 1.2rem;
-            color: #ddd;
-            margin: 5px 0;
-        }
-        /* אנימציה של קלף מסתובב */
-        .card-loader {
-            margin-bottom: 30px;
-            width: 60px;
-            height: 85px;
-            background-color: white;
-            border-radius: 5px;
-            border: 2px solid #fff;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-            animation: flip 1.2s infinite ease-in-out;
-        }
-        @keyframes flip {
-            0% { transform: perspective(200px) rotateY(0deg); }
-            50% { transform: perspective(200px) rotateY(180deg); background-color: #ff0044; border-color: #ff0044; }
-            100% { transform: perspective(200px) rotateY(360deg); }
-        }
-        .subtitle {
-            font-size: 0.9rem;
-            opacity: 0.6;
-            margin-top: 20px;
+
+        .win-title {
+            font-family: 'Russo One', sans-serif;
+            font-size: 42px; /* הוקטן קצת כדי שיכנס בטלפון בשורה אחת או שתיים */
+            color: #ffd700;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #ff00c8, 0 0 30px #ffd700;
             text-transform: uppercase;
+        }
+
+        .win-msg {
+            font-size: 20px;
+            color: #fff;
+            margin-bottom: 40px;
+            line-height: 1.6;
+            max-width: 450px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #00ffcc;
+        }
+
+        .highlight {
+            color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .win-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #whatsapp-btn {
+            background-color: #25D366;
+            color: white;
+            font-family: 'Russo One', sans-serif;
+            font-size: 22px;
+            padding: 15px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 0 20px rgba(37, 211, 102, 0.5);
+            transition: all 0.2s;
+            border: 2px solid #1ebe5d;
+        }
+
+        #whatsapp-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(37, 211, 102, 0.8);
         }
     </style>
 </head>
 <body>
-    <div class="card-loader"></div>
-    <h1>AMOSOLITAIRE</h1>
-    <p>Shuffling the deck...</p>
-    <p class="subtitle">Challenge Accepted, Assi.</p>
+
+    <div id="game-board">
+        <div class="header-text" id="prompt-text">Your move, Asi.</div>
+        
+        <div class="solitaire-layout">
+            <div class="row">
+                <div class="pile"><div class="card-back"></div></div>
+                <div class="pile"></div>
+                <div class="pile" style="border:none;"></div>
+                <div class="pile"></div>
+                <div class="pile"></div>
+                <div class="pile"></div>
+                <div class="pile"></div>
+            </div>
+            <div class="row" style="margin-top: 20px;">
+                <div class="pile"><div class="card-back"></div></div>
+                <div class="pile"><div class="card-back"></div><div class="card-back stack-2"></div></div>
+                <div class="pile"><div class="card-back"></div><div class="card-back stack-2"></div><div class="card-back stack-3"></div></div>
+                <div class="pile"><div class="card-back"></div><div class="card-back stack-2"></div><div class="card-back stack-3"></div><div class="card-back stack-4"></div></div>
+                <div class="pile"><div class="card-back"></div><div class="card-back stack-2"></div><div class="card-back stack-3"></div><div class="card-back stack-4"></div><div class="card-back stack-5"></div></div>
+                <div class="pile"><div class="card-back"></div></div>
+                <div class="pile"><div class="card-back"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="win-canvas"></canvas>
+
+    <div id="win-overlay">
+        <div class="win-title">AUTO-WIN ACTIVATED</div>
+        <div class="win-msg">
+            Amos doesn't waste time on solved problems.<br><br>
+            <span class="highlight">Let's tackle the real challenges.</span>
+        </div>
+        
+        <div class="win-actions">
+            <a id="whatsapp-btn" href="https://wa.me/972523661999?text=GG" target="_blank">
+                <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                </svg>
+                HIRE HIM
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('win-canvas');
+        const ctx = canvas.getContext('2d');
+        const cardImg = new Image();
+        
+        cardImg.src = 'char_me.png'; 
+        
+        let width, height;
+        let animationActive = false;
+        let cards = [];
+        
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class BouncingCard {
+            constructor() {
+                this.x = width * 0.8;
+                this.y = height * 0.1;
+                this.vx = (Math.random() * -6) - 2; 
+                this.vy = (Math.random() * -10) - 5; 
+                this.gravity = 0.5; 
+                this.bounce = -0.7; 
+                
+                // התאמה דינמית של גודל הקלף הקופץ - קטן יותר במסכי מובייל
+                this.cardW = width < 600 ? 50 : 80;
+                this.cardH = width < 600 ? 70 : 112;
+            }
+
+            update() {
+                this.vy += this.gravity;
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.y + this.cardH > height) {
+                    this.y = height - this.cardH;
+                    this.vy *= this.bounce;
+                    this.vx *= 0.99; 
+                }
+
+                if (this.x < 0) {
+                    this.x = 0;
+                    this.vx *= -1;
+                } else if (this.x + this.cardW > width) {
+                    this.x = width - this.cardW;
+                    this.vx *= -1;
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(this.x, this.y, this.cardW, this.cardH);
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(this.x, this.y, this.cardW, this.cardH);
+                
+                if (cardImg.complete) {
+                    ctx.drawImage(cardImg, this.x + 5, this.y + 5, this.cardW - 10, this.cardH - 10);
+                }
+            }
+        }
+
+        function animate() {
+            if (!animationActive) return;
+            
+            ctx.fillStyle = 'rgba(0, 119, 0, 0.01)';
+            ctx.fillRect(0, 0, width, height);
+
+            cards.forEach(card => {
+                card.update();
+                card.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        let spawnInterval;
+
+        function triggerWin() {
+            if (animationActive) return; 
+            
+            animationActive = true;
+            document.getElementById('prompt-text').innerText = "JACKPOT!";
+            canvas.style.display = 'block';
+            
+            spawnInterval = setInterval(() => {
+                cards.push(new BouncingCard());
+            }, 400);
+
+            cards.push(new BouncingCard());
+            setTimeout(() => cards.push(new BouncingCard()), 100);
+            setTimeout(() => cards.push(new BouncingCard()), 200);
+
+            animate();
+
+            setTimeout(() => {
+                clearInterval(spawnInterval); 
+                document.getElementById('win-overlay').classList.add('visible');
+            }, 5000);
+        }
+
+        document.body.addEventListener('mousedown', triggerWin);
+        document.body.addEventListener('touchstart', triggerWin);
+
+    </script>
 </body>
 </html>
