@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amosolitaire - Loading</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            /* ירוק קלאסי של שולחן קלפים */
+            background: radial-gradient(circle, #007700 0%, #004400 100%);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            overflow: hidden;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+            letter-spacing: 2px;
+        }
+        p {
+            font-size: 1.2rem;
+            color: #ddd;
+            margin: 5px 0;
+        }
+        /* אנימציה של קלף מסתובב */
+        .card-loader {
+            margin-bottom: 30px;
+            width: 60px;
+            height: 85px;
+            background-color: white;
+            border-radius: 5px;
+            border: 2px solid #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            animation: flip 1.2s infinite ease-in-out;
+        }
+        @keyframes flip {
+            0% { transform: perspective(200px) rotateY(0deg); }
+            50% { transform: perspective(200px) rotateY(180deg); background-color: #ff0044; border-color: #ff0044; }
+            100% { transform: perspective(200px) rotateY(360deg); }
+        }
+        .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.6;
+            margin-top: 20px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="card-loader"></div>
+    <h1>AMOSOLITAIRE</h1>
+    <p>Shuffling the deck...</p>
+    <p class="subtitle">Challenge Accepted, Assi.</p>
+</body>
+</html>
