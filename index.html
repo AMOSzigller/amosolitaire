@@ -15,7 +15,7 @@
             font-family: 'Share Tech Mono', monospace;
             overflow: hidden;
             user-select: none;
-            touch-action: none; /* חוסם גלילת מסך מעצבנת במובייל */
+            touch-action: none; /* מונע גלילה במובייל */
         }
 
         /* --- הלוח המזויף --- */
@@ -59,13 +59,14 @@
         }
 
         .pile {
-            width: 13%;
+            width: 12%;
             aspect-ratio: 2.5 / 3.5;
             border: 2px dashed rgba(255, 255, 255, 0.3);
             border-radius: 5px;
             position: relative;
         }
 
+        /* יצירת מראה של קלפים הפוכים */
         .card-back {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -90,7 +91,7 @@
             width: 100vw;
             height: 100vh;
             z-index: 20;
-            pointer-events: none; 
+            pointer-events: none; /* כדי לא לחסום לחיצות על המסך */
             display: none;
         }
 
@@ -120,7 +121,7 @@
 
         .win-title {
             font-family: 'Russo One', sans-serif;
-            font-size: 42px; /* הוקטן קצת כדי שיכנס בטלפון בשורה אחת או שתיים */
+            font-size: 50px;
             color: #ffd700;
             margin-bottom: 20px;
             text-shadow: 0 0 10px #ff00c8, 0 0 30px #ffd700;
@@ -128,7 +129,7 @@
         }
 
         .win-msg {
-            font-size: 20px;
+            font-size: 22px;
             color: #fff;
             margin-bottom: 40px;
             line-height: 1.6;
@@ -206,7 +207,7 @@
         <div class="win-title">AUTO-WIN ACTIVATED</div>
         <div class="win-msg">
             Amos doesn't waste time on solved problems.<br><br>
-            <span class="highlight">Let's tackle the real challenges.</span>
+            <span class="highlight">Let's work on  real challenges.</span>
         </div>
         
         <div class="win-actions">
@@ -224,12 +225,14 @@
         const ctx = canvas.getContext('2d');
         const cardImg = new Image();
         
+        // התמונה שתקפוץ על המסך - הפרצוף שלך!
         cardImg.src = 'char_me.png'; 
         
         let width, height;
         let animationActive = false;
         let cards = [];
         
+        // הגדרת גודל הקנבס לגודל המסך המלא
         function resizeCanvas() {
             width = window.innerWidth;
             height = window.innerHeight;
@@ -240,18 +243,22 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
+        // מחלקת קלף קופץ
         class BouncingCard {
             constructor() {
+                // מתחילים בערך מהפינה הימנית העליונה (איפה שערמות הסיום בסוליטר)
                 this.x = width * 0.8;
                 this.y = height * 0.1;
+                // מהירות קפיצה אקראית שמאלה
                 this.vx = (Math.random() * -6) - 2; 
+                // קפיצה קטנה למעלה לפני הנפילה
                 this.vy = (Math.random() * -10) - 5; 
-                this.gravity = 0.5; 
-                this.bounce = -0.7; 
+                this.gravity = 0.5; // כוח המשיכה
+                this.bounce = -0.7; // עצמת הקפיצה חזרה מהרצפה
                 
-                // התאמה דינמית של גודל הקלף הקופץ - קטן יותר במסכי מובייל
-                this.cardW = width < 600 ? 50 : 80;
-                this.cardH = width < 600 ? 70 : 112;
+                // גודל הקלף המצויר (פרופורציות של קלף פחות או יותר)
+                this.cardW = 80;
+                this.cardH = 112;
             }
 
             update() {
@@ -259,12 +266,15 @@
                 this.x += this.vx;
                 this.y += this.vy;
 
+                // פגיעה ברצפה (קופץ חזרה)
                 if (this.y + this.cardH > height) {
                     this.y = height - this.cardH;
                     this.vy *= this.bounce;
+                    // קצת חיכוך כדי שלא יקפוץ לנצח לאותו גובה
                     this.vx *= 0.99; 
                 }
 
+                // פגיעה בקירות (משנה כיוון)
                 if (this.x < 0) {
                     this.x = 0;
                     this.vx *= -1;
@@ -275,12 +285,14 @@
             }
 
             draw() {
+                // ציור רקע לבן ומסגרת כדי שייראה כמו קלף
                 ctx.fillStyle = '#fff';
                 ctx.fillRect(this.x, this.y, this.cardW, this.cardH);
                 ctx.strokeStyle = '#000';
                 ctx.lineWidth = 1;
                 ctx.strokeRect(this.x, this.y, this.cardW, this.cardH);
                 
+                // ציור הפרצוף שלך בתוך הקלף
                 if (cardImg.complete) {
                     ctx.drawImage(cardImg, this.x + 5, this.y + 5, this.cardW - 10, this.cardH - 10);
                 }
@@ -290,6 +302,9 @@
         function animate() {
             if (!animationActive) return;
             
+            // ב-Solitaire של ווינדוס לא מוחקים את הקנבס, אלא מציירים על גבי הישן 
+            // זה מה שיוצר את "אפקט השובל" האייקוני!
+            // אנחנו נוסיף רק שקיפות עדינה מאוד כדי שזה לא יאט את הדפדפן לגמרי.
             ctx.fillStyle = 'rgba(0, 119, 0, 0.01)';
             ctx.fillRect(0, 0, width, height);
 
@@ -304,28 +319,34 @@
         let spawnInterval;
 
         function triggerWin() {
-            if (animationActive) return; 
+            if (animationActive) return; // לא להפעיל פעמיים
             
             animationActive = true;
             document.getElementById('prompt-text').innerText = "JACKPOT!";
+            
+            // מציגים את הקנבס מעל הלוח
             canvas.style.display = 'block';
             
+            // מתחילים לירות קלפים כל 400 מילישניות
             spawnInterval = setInterval(() => {
                 cards.push(new BouncingCard());
             }, 400);
 
+            // יריית פתיחה של 3 קלפים יחד
             cards.push(new BouncingCard());
             setTimeout(() => cards.push(new BouncingCard()), 100);
             setTimeout(() => cards.push(new BouncingCard()), 200);
 
             animate();
 
+            // אחרי 5 שניות, מראים את מסך הסיום עם העקיצה לאסי
             setTimeout(() => {
-                clearInterval(spawnInterval); 
+                clearInterval(spawnInterval); // מפסיק לירות קלפים חדשים
                 document.getElementById('win-overlay').classList.add('visible');
             }, 5000);
         }
 
+        // ברגע שאסי ינסה ללחוץ (או לגרור/לגעת) בשום מקום במסך - המלכודת נסגרת!
         document.body.addEventListener('mousedown', triggerWin);
         document.body.addEventListener('touchstart', triggerWin);
 
